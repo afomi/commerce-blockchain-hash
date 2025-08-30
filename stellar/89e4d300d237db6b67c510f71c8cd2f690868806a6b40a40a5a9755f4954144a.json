@@ -1,0 +1,56 @@
+{
+  "_links": {
+    "account": {
+      "href": "https://horizon.stellar.org/accounts/GAZT5K7U6TA6EDYLRDULSTMXMLJQP3WN77MCC2Y6FZUTFWKSOYSXWTY2"
+    },
+    "effects": {
+      "href": "https://horizon.stellar.org/transactions/89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "ledger": {
+      "href": "https://horizon.stellar.org/ledgers/58670266"
+    },
+    "operations": {
+      "href": "https://horizon.stellar.org/transactions/89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "precedes": {
+      "href": "https://horizon.stellar.org/transactions?order=asc&cursor=251986873717821440"
+    },
+    "self": {
+      "href": "https://horizon.stellar.org/transactions/89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a"
+    },
+    "succeeds": {
+      "href": "https://horizon.stellar.org/transactions?order=desc&cursor=251986873717821440"
+    },
+    "transaction": {
+      "href": "https://horizon.stellar.org/transactions/89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a"
+    }
+  },
+  "created_at": "2025-08-28T13:02:45Z",
+  "envelope_xdr": "AAAAAgAAAAAzPqv09MHiDwuI6LlNl2LTB+7N/9ghax4uaTLZUnYlewAAAMgDfzrtAAAAAQAAAAEAAAAAAAAAAAAAAABosFPPAAAAA8cJcqEpCLc8JAfZzGhCuioCIDppDzCQzSnzDEXwz9k9AAAAAQAAAAAAAAABAAAAADM+q/T0weIPC4jouU2XYtMH7s3/2CFrHi5pMtlSdiV7AAAAAAAAAAAAmJaAAAAAAAAAAAFSdiV7AAAAQC0Emv8P0NAYodk9mdKazbqH0v5eAPrLRkmdm4uHroCS5K5ijYWUi32y3PN3mCM5E7yASnTGCJJXmYBiOSolWQw=",
+  "fee_account": "GAZT5K7U6TA6EDYLRDULSTMXMLJQP3WN77MCC2Y6FZUTFWKSOYSXWTY2",
+  "fee_charged": "100",
+  "fee_meta_xdr": "AAAAAgAAAAMDfzthAAAAAAAAAAAzPqv09MHiDwuI6LlNl2LTB+7N/9ghax4uaTLZUnYlewAAAAAejGYNA3867QAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEDfzy6AAAAAAAAAAAzPqv09MHiDwuI6LlNl2LTB+7N/9ghax4uaTLZUnYlewAAAAAejGWpA3867QAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+  "hash": "89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a",
+  "id": "89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a",
+  "ledger": 58670266,
+  "max_fee": "200",
+  "memo": "xwlyoSkItzwkB9nMaEK6KgIgOmkPMJDNKfMMRfDP2T0=",
+  "memo_type": "hash",
+  "operation_count": 1,
+  "paging_token": "251986873717821440",
+  "preconditions": {
+    "timebounds": {
+      "max_time": "1756386255",
+      "min_time": "0"
+    }
+  },
+  "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAA=",
+  "signatures": [
+    "LQSa/w/Q0Bih2T2Z0prNuofS/l4A+stGSZ2bi4eugJLkrmKNhZSLfbLc83eYIzkTvIBKdMYIkleZgGI5KiVZDA=="
+  ],
+  "source_account": "GAZT5K7U6TA6EDYLRDULSTMXMLJQP3WN77MCC2Y6FZUTFWKSOYSXWTY2",
+  "source_account_sequence": "251984893737697281",
+  "successful": true
+}
