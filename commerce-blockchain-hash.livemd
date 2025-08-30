@@ -1,0 +1,241 @@
+# Commerce Blockchain Hash
+
+```elixir
+Mix.install([
+  {:req, "~> 0.5.15"},
+  {:json, "~> 1.4"}
+])
+
+output_dir = Path.absname(__DIR__) # this path is relative to where this .livemd file lives
+```
+
+## Section
+
+## A hash of the GDP .pdf document was written to 9 blockchains
+
+So, this is the "document hash", or "hash of the .pdf document". Basically, it's a unique fingerprint. If even one character in the .pdf changes... even one bit, the hash would also change.
+
+<!-- livebook:{"break_markdown":true} -->
+
+The SHA-256 hash for the `gdp2q25-2nd.pdf` document is `c70972a12908b73c2407d9cc6842ba2a02203a690f3090cd29f30c45f0cfd93d`, and that value was put on the 9 different chains on August 28, 2026.
+
+<!-- livebook:{"break_markdown":true} -->
+
+Here, I downloaded the .pdf and hashed it myself. In the Livebook, the value matches (run it for yourself).
+
+```elixir
+path = "#{output_dir}/gdp2q25-2nd.pdf" # path of the .pdf file
+data = File.read!(path) # read the .pdf file
+
+sha256_hex = 
+  :crypto.hash(:sha256, data) # get the sha256 hash of the data (like a fingerprint)
+  |> Base.encode16(case: :lower) # then convert that (binary value)
+```
+
+## Chain Fetch + Save (public APIs)
+
+The following cell uses public endpoints to fetch the on-chain records and saves them as `chainId-hash.json` in `/livebook`.
+
+* Bitcoin: Blockstream API `GET https://blockstream.info/api/tx/{txid}`
+* Ethereum: JSON-RPC `POST https://cloudflare-eth.com` (`eth_getLogs` for the contract address)
+* Avalanche C-Chain: JSON-RPC `POST https://api.avax.network/ext/bc/C/rpc`
+* Arbitrum One: JSON-RPC `POST https://arb1.arbitrum.io/rpc`
+* Polygon PoS: JSON-RPC `POST https://polygon-rpc.com`
+* Optimism: JSON-RPC `POST https://mainnet.optimism.io`
+* Solana: RPC `POST https://api.mainnet-beta.solana.com` (`getTransaction`)
+* TRON: TronGrid `GET https://api.trongrid.io/v1/transactions/{txid}`
+* Stellar: Horizon `GET https://horizon.stellar.org/transactions/{tx_hash}`
+
+```elixir
+hashes = %{
+  bitcoin: "fcf172401ca9d89013f13f5bbf0fc7577cb8a3588bf5cbc3b458ff36635fec00",
+  ethereum: "0x36ccdF11044f60F196e981970d592a7DE567ed7b",
+  solana: "43dJVBK4hiXy1rpC5BifT8LU2NDNHKmdWyqyYDaTfyEeX8y3LMtUtajW3Q22rCSbmneny56CBtkictQRQJXV1ybp",
+  tron: "3f05633fb894aa6d6610c980975cca732a051edbbf5d8667799782cf2ae04040",
+  stellar: "89e4d300d237db6b67c510f71c8cd2f690868806a6b40a40a5a9755f4954144a",
+  avalanche: "0x36ccdF11044f60F196e981970d592a7DE567ed7b",
+  arbitrum: "0x36ccdF11044f60F196e981970d592a7DE567ed7b",
+  polygon: "0x36ccdF11044f60F196e981970d592a7DE567ed7b",
+  optimism: "0x36ccdF11044f60F196e981970d592a7DE567ed7b"
+}
+
+evm_rpcs = %{
+  "1" => "https://cloudflare-eth.com",            # Ethereum mainnet
+  "43114" => "https://api.avax.network/ext/bc/C/rpc", # Avalanche C-Chain
+  "42161" => "https://arb1.arbitrum.io/rpc",         # Arbitrum One
+  "137" => "https://polygon-rpc.com",               # Polygon PoS
+  "10" => "https://mainnet.optimism.io"            # Optimism
+}
+
+defmodule Fetch do
+  def write!(output_dir, chain_id, id, data) do
+    file = Path.join(output_dir, "#{chain_id}-#{id}.json")
+    json = Jason.encode!(data, pretty: true)
+    File.write!(file, json)
+    file
+  end
+
+  def btc!(txid) do
+    url = "https://blockstream.info/api/tx/#{txid}"
+    Req.get!(url).body
+  end
+
+  def stellar!(txid) do
+    url = "https://horizon.stellar.org/transactions/#{txid}"
+    Req.get!(url).body
+  end
+
+  def tron!(txid) do
+    url = "https://api.trongrid.io/v1/transactions/#{txid}"
+    Req.get!(url).body # |> Map.get("data", [])
+  end
+
+  def solana!(sig) do
+    url = "https://api.mainnet-beta.solana.com"
+    body = %{
+      "jsonrpc" => "2.0",
+      "id" => 1,
+      "method" => "getTransaction",
+      "params" => [sig, %{"encoding" => "json", "maxSupportedTransactionVersion" => 0}]
+    }
+    Req.post!(url, json: body).body["result"]
+  end
+
+  def evm_logs!(rpc, address) do
+    body = %{
+      "jsonrpc" => "2.0",
+      "id" => 1,
+      "method" => "eth_getLogs",
+      "params" => [%{"address" => String.downcase(address), "fromBlock" => "0x0", "toBlock" => "latest"}]
+    }
+    Req.post!(rpc, json: body).body["result"]
+  end
+
+  # Convenience wrappers for common EVM chains
+  def avalanche!(address), do: evm_logs!("https://api.avax.network/ext/bc/C/rpc", address)
+  def arbitrum!(address), do: evm_logs!("https://arb1.arbitrum.io/rpc", address)
+  def polygon!(address), do: evm_logs!("https://polygon-rpc.com", address)
+  def optimism!(address), do: evm_logs!("https://mainnet.optimism.io", address)
+
+  # Fetch contract code (bytecode) at address via eth_getCode
+  def evm_code!(rpc, address) do
+    body = %{
+      "jsonrpc" => "2.0",
+      "id" => 1,
+      "method" => "eth_getCode",
+      "params" => [String.downcase(address), "latest"]
+    }
+    Req.post!(rpc, json: body).body["result"]
+  end
+
+  # Code helpers per chain
+  def ethereum_code!(address), do: evm_code!("https://cloudflare-eth.com", address)
+  def avalanche_code!(address), do: evm_code!("https://api.avax.network/ext/bc/C/rpc", address)
+  def arbitrum_code!(address), do: evm_code!("https://arb1.arbitrum.io/rpc", address)
+  def polygon_code!(address), do: evm_code!("https://polygon-rpc.com", address)
+  def optimism_code!(address), do: evm_code!("https://mainnet.optimism.io", address)
+end
+
+# Ensure output directory exists
+File.mkdir_p!(output_dir)
+
+```
+
+```elixir
+# Bitcoin
+btc_txid = hashes.bitcoin
+btc_data = Fetch.btc!(btc_txid)
+Fetch.write!(output_dir, "bitcoin", btc_txid, btc_data)
+```
+
+```elixir
+
+# Stellar
+stellar_txid = hashes.stellar
+stellar_data = Fetch.stellar!(stellar_txid)
+Fetch.write!(output_dir, "stellar", stellar_txid, stellar_data)
+```
+
+```elixir
+
+
+# TRON
+tron_txid = hashes.tron
+tron_data = Fetch.tron!(tron_txid)
+Fetch.write!(output_dir, "tron", tron_txid, tron_data)
+
+```
+
+```elixir
+
+# Solana
+sol_sig = hashes.solana
+sol_data = Fetch.solana!(sol_sig)
+Fetch.write!(output_dir, "solana", sol_sig, sol_data)
+
+```
+
+```elixir
+
+# EVM chains (logs for the contract address)
+for {chain_id, rpc} <- evm_rpcs do
+  addr = hashes.ethereum # same address provided for EVM chains
+  logs = Fetch.evm_logs!(rpc, addr)
+  Fetch.write!(output_dir, chain_id, addr, %{address: addr, logs: logs})
+end
+```
+
+```elixir
+# EVM contract bytecode (eth_getCode) for the same address
+for {chain_id, rpc} <- evm_rpcs do
+  addr = hashes.ethereum
+  bytecode = Fetch.evm_code!(rpc, addr)
+  # Note: "0x" means no contract at this address on that chain
+  Fetch.write!(output_dir, chain_id <> "-code", addr, %{address: addr, bytecode: bytecode})
+end
+```
+
+```elixir
+# Avalanche (C-Chain)
+addr = hashes.ethereum
+avax_logs = Fetch.avalanche!(addr)
+Fetch.write!(output_dir, "avalanche", addr, %{address: addr, logs: avax_logs})
+```
+
+```elixir
+# Arbitrum One
+addr = hashes.ethereum
+arb_logs = Fetch.arbitrum!(addr)
+Fetch.write!(output_dir, "arbitrum", addr, %{address: addr, logs: arb_logs})
+```
+
+```elixir
+# Polygon PoS
+addr = hashes.ethereum
+polygon_logs = Fetch.polygon!(addr)
+Fetch.write!(output_dir, "polygon", addr, %{address: addr, logs: polygon_logs})
+```
+
+```elixir
+# Optimism
+addr = hashes.ethereum
+op_logs = Fetch.optimism!(addr)
+Fetch.write!(output_dir, "optimism", addr, %{address: addr, logs: op_logs})
+```
+
+## Stellar
+
+On the stellar blockchain, the transaction puts the value `xwlyoSkItzwkB9nMaEK6KgIgOmkPMJDNKfMMRfDP2T0` in the memo field,
+which is a Base64 encoded value.
+
+```elixir
+memo = "xwlyoSkItzwkB9nMaEK6KgIgOmkPMJDNKfMMRfDP2T0="
+```
+
+```elixir
+{:ok, memo_binary} = Base.decode64(memo)
+```
+
+```elixir
+memo_hex = Base.encode16(memo_binary, case: :lower)
+```
